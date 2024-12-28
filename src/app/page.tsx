@@ -7,6 +7,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { usePaginatedQuery } from "convex/react";
 import { Loader } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { data, isLoading } = useGetWorkSpaces();
@@ -14,12 +15,14 @@ export default function Home() {
 
   const workspaceId = useMemo(() => data?.[0]?._id!, [data]);
   const { signOut } = useAuthActions();
-
+const router = useRouter()
   useEffect(() => {
     if (isLoading) return;
 
     if (workspaceId) {
       console.log("riderct to workspace");
+      router.push(`/workspace/${workspaceId}`)
+
     } else {
       console.log("open modal to create");
 
