@@ -10,7 +10,6 @@ import {
 import { useCreateChannelModal } from "../store/use-create-channel-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useStartTyping } from "react-use";
 import { useState } from "react";
 import { useCreateChannel } from "../api/use-create-channel";
 import { MutableRequestCookiesAdapter } from "next/dist/server/web/spec-extension/adapters/request-cookies";

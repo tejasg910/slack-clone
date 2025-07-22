@@ -4,10 +4,11 @@ import { MdSend } from "react-icons/md"
 import Quill, { Delta, Op, QuillOptions } from "quill"
 import "quill/dist/quill.snow.css"
 import { Button } from './ui/button';
-import { ImageIcon, Keyboard, Move3D, Smile } from 'lucide-react';
+import { ImageIcon, Keyboard, Move3D, Smile, XIcon } from 'lucide-react';
 import { Hint } from './hint'
 import { cn } from '@/lib/utils'
 import { EmojiPopOver } from './ui/emoji-popover'
+import Image from 'next/image'
 
 type EditorValue = {
   image: File | null,
@@ -28,17 +29,18 @@ const Editor = ({ onCancel, onSubmit, placeHolder = "Write something...", defaul
 
 
   const [text, setText] = useState("");
+  const [image, setImage] = useState<File | null>(null)
   const [isToolbarVisible, setIsToolbarVisible] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const submitRef = useRef(onsubmit);
+  const imageElementRef = useRef<HTMLInputElement>(null)
+  const submitRef = useRef(onSubmit);
   const placeHolderRef = useRef(placeHolder);
   const quillRef = useRef<Quill | null>(null);
   const defaultValueRef = useRef(defaultValue);
   const disabledRef = useRef(disabled);
 
   useLayoutEffect(() => {
-    submitRef.current = onsubmit;
+    submitRef.current = onSubmit;
     placeHolderRef.current = placeHolder;
     defaultValueRef.current = defaultValue;
     disabledRef.current = disabled;
@@ -70,7 +72,17 @@ const Editor = ({ onCancel, onSubmit, placeHolder = "Write something...", defaul
               handler: () => {
 
                 //todo : on submit method
-                return;
+                const text = quill.getText();
+
+                const addedImage = imageElementRef.current?.files?.[0] || null;
+                const isEmpty = !addedImage && text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
+
+                if (isEmpty) return;
+
+                const body = JSON.stringify(quill.getContents());
+                submitRef.current?.({ body, image: addedImage });
+
+
               }
 
 
@@ -139,13 +151,46 @@ const Editor = ({ onCancel, onSubmit, placeHolder = "Write something...", defaul
     quill?.insertText(quill?.getSelection()?.index || 0, emoji.native)
   }
 
-  const isEmpty = text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
+
+
+
+
+  const isEmpty = !image && text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
   return (
     <div className='flex flex-col'>
-
-      <div className='flex flex-col border border-slate-200 rounded-md overflow-hidden focus-within:border-slate-300 focus-within:shadow-sm transition bg-white'>
+      <input type="file" accept="image/*" ref={imageElementRef}
+        onChange={(e) => setImage(e.target.files![0])}
+        className='hidden'
+      />
+      <div className={cn("flex flex-col border border-slate-200 rounded-md overflow-hidden focus-within:border-slate-300 focus-within:shadow-sm transition bg-white", disabled && "opacity-50")}>
         <div ref={containerRef} className='h-full ql-custom'
         />
+
+        {
+          !!image && <div className=" relative size-[62px] flex items-center justify-center group/image">
+
+            <Hint label="Remove image">
+
+
+              <button onClick={() => {
+                setImage(null);
+                imageElementRef.current!.value = "";
+              }}
+
+                className='group-hover/image:flex hidden rounded-full bg-black/70 hover:bg-black  absolute -top-2.5 -right-2.5  text-white size-6 z-[4] border-2 border-white items-center justify-center'
+              >
+
+                <XIcon className='size-3.5' />
+
+              </button>
+            </Hint>
+            <Image src={URL.createObjectURL(image)} alt='Uploaded'
+
+              fill
+              className='rounded-xl overflow-hidden border  object-cover'
+            />
+          </div>
+        }
         <div className='flex px-2 pb-2 z-[5]'>
           <Hint label={isToolbarVisible ? "Hide formatting" : "Show formattiing"}>
 
@@ -166,7 +211,7 @@ const Editor = ({ onCancel, onSubmit, placeHolder = "Write something...", defaul
           {variant === "create" && <Hint label="Image">
 
 
-            <Button disabled={false} size='iconSm' variant="ghost" onClick={() => { }}>
+            <Button disabled={false} size='iconSm' variant="ghost" onClick={() => imageElementRef.current?.click()}>
 
               <ImageIcon className='size-4' />
             </Button>
@@ -180,13 +225,15 @@ const Editor = ({ onCancel, onSubmit, placeHolder = "Write something...", defaul
                 variant="outline"
                 size="sm"
                 disabled={false}
-                onClick={() => { }}
+                onClick={onCancel}
               >Cancel</Button>
               <Button
 
                 disabled={false}
                 size="sm"
-                onClick={() => { }}
+                onClick={() => {
+                  onSubmit({ body: JSON.stringify(quillRef.current?.getContents()), image: image });
+                }}
 
                 className=' bg-[#007a5a] hover:bg-[#007a5a]/80  text-white'
               >Save</Button>
@@ -199,7 +246,10 @@ const Editor = ({ onCancel, onSubmit, placeHolder = "Write something...", defaul
 
           )}
 
-            disabled={disabled || isEmpty} size='iconSm' variant="ghost" onClick={() => { }}>
+            disabled={disabled || isEmpty} size='iconSm' variant="ghost" onClick={() => {
+              console.log("submit button")
+              onSubmit({ body: JSON.stringify(quillRef.current?.getContents()), image: image });
+            }}>
 
             <MdSend className='size-4' />
           </Button>}
